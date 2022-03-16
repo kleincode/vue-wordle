@@ -20,23 +20,24 @@ class Dictionary {
     }
 
     check(searchString: string): boolean {
+      const target = searchString.toLocaleLowerCase();
       // binary search
-      let l = 0; let
-        r = this.numWords;
-      do {
+      let l = 0;
+      let r = this.numWords - 1;
+      while (l <= r) {
         const i = Math.floor((l + r) / 2);
         const iWord = this.getWord(i);
-        const cmp = searchString.localeCompare(iWord);
+        const cmp = target.localeCompare(iWord);
         if (cmp < 0) {
           // search string comes before i word
-          r = i;
+          r = i - 1;
         } else if (cmp > 0) {
           // search string comes after i word
-          l = i;
+          l = i + 1;
         } else {
           return true;
         }
-      } while (l < r);
+      }
       // l = r and word at r/l is not equal to search string --> search string is not in dictionary
       return false;
     }
