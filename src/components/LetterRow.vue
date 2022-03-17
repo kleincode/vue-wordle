@@ -71,8 +71,7 @@ export default class LetterRow extends Vue {
     display: flex;
     justify-content: center;
     &.active > * {
-        border-color: blue;
-        color: blue;
+      box-shadow: 1px 1px 5px rgba(1, 1, 1, 0.4), inset 0 0 5px #81d4fa;
     }
 }
 

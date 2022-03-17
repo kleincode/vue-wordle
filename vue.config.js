@@ -1,5 +1,5 @@
 module.exports = {
-  publicPath: '/wordle',
+  publicPath: '/wordguesser',
   css: {
     extract: false,
   },

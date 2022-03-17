@@ -1,5 +1,5 @@
 {
-  "name": "vue-wordle",
+  "name": "vue-wordguesser",
   "version": "0.1.0",
   "private": true,
   "scripts": {
