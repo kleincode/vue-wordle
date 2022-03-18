@@ -41,6 +41,11 @@ class Dictionary {
       // l = r and word at r/l is not equal to search string --> search string is not in dictionary
       return false;
     }
+
+    getRandomWord(): string {
+      const index = Math.floor(Math.random() * this.numWords);
+      return this.dictStr.substring(this.wordLength * index, this.wordLength * (index + 1));
+    }
 }
 
 export default Dictionary;

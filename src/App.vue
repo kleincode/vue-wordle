@@ -75,6 +75,7 @@ export default class App extends Vue {
   reason: GameOverReason = GameOverReason.CRASH;
 
   mounted(): void {
+    this.targetWord = this.dictionary.getRandomWord();
     this.reset(null);
     document.addEventListener('keyup', this.onKeyUp);
   }
