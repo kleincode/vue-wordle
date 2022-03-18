@@ -1,23 +1,54 @@
 <template>
   <h1>wordguesser DE</h1>
-  <LetterRow v-for="i in numWords" :key="i" :active="i - 1 === activeRow" :word="words[i - 1]"
-  :complete="i - 1 < activeRow" :targetWord="targetWord" />
-  <div class="info-text">{{ output }}</div>
-  <div class="button-row">
-    <button @click="reset($event)">Neustart</button>
-    <button class="submit-button" @click="submit">Eingabe</button>
-    <button @click="showHelp">Hilfe</button>
+  <LetterRow
+    v-for="i in numWords"
+    :key="i"
+    :active="i - 1 === activeRow"
+    :word="words[i - 1]"
+    :complete="i - 1 < activeRow"
+    :target-word="targetWord"
+  />
+  <div class="info-text">
+    {{ output }}
   </div>
+  <div class="button-row">
+    <button @click="giveUp()">
+      Aufgeben
+    </button>
+    <button
+      class="submit-button"
+      @click="submit"
+    >
+      Eingabe
+    </button>
+    <button @click="showHelp">
+      Hilfe
+    </button>
+  </div>
+  <Modal v-model="modalShown">
+    <template #header>
+      <h1>Spiel vorbei</h1>
+    </template>
+    <template #body>
+      <p>Das Spiel ist beendet.</p>
+    </template>
+    <template #footer>
+      ...
+    </template>
+  </Modal>
 </template>
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
 import LetterRow from './components/LetterRow.vue';
+import Modal from './components/Modal.vue';
 import Dictionary from './dict/dictionary';
+import GameOverReason from './GameOverReason';
 
 @Options({
   components: {
     LetterRow,
+    Modal,
   },
 })
 export default class App extends Vue {
@@ -38,6 +69,10 @@ export default class App extends Vue {
   gameOver = true;
 
   triesToWin = -1;
+
+  modalShown = true;
+
+  reason: GameOverReason = GameOverReason.CRASH;
 
   mounted(): void {
     this.reset(null);
@@ -63,6 +98,12 @@ export default class App extends Vue {
     if (newWord !== null && this.activeRow >= 0 && this.activeRow < this.numWords) {
       this.words[this.activeRow] = newWord;
     }
+  }
+
+  giveUp(): void {
+    this.reason = GameOverReason.USER_GAVE_UP;
+    this.gameOver = true;
+    this.modalShown = true;
   }
 
   submit(): void {
@@ -118,6 +159,12 @@ export default class App extends Vue {
 </script>
 
 <style lang="scss">
+
+h1 {
+  margin: 16px 0;
+  font-size: 2.4em;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -135,7 +182,7 @@ export default class App extends Vue {
     border: 2px solid #000000;
     background-color: #ffffff;
     padding: 6px 8px;
-    font-size: 20px;
+    font-size: 16px;
     width: 92px;
     border-radius: 10px;
     transition: all .05s linear;
@@ -160,6 +207,10 @@ export default class App extends Vue {
 @media only screen and (max-width: 600px) {
   #app {
     margin-top: 0;
+  }
+  h1 {
+    margin: 5px 0;
+    font-size: 1.8em;
   }
 }
 </style>
