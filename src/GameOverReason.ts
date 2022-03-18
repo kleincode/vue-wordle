@@ -1,9 +1,9 @@
 /* eslint-disable no-unused-vars */
 enum GameOverReason {
-    CRASH,
-    USER_GAVE_UP,
-    USER_LOST,
-    USER_WON,
+    CRASH = 0,
+    USER_GAVE_UP = 1,
+    USER_LOST = 2,
+    USER_WON = 3,
 }
 
 export default GameOverReason;

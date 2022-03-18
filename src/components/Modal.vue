@@ -65,15 +65,24 @@ export default class Modal extends Vue {
     overflow: auto; /* Enable scroll if needed */
     background-color: rgb(0,0,0); /* Fallback color */
     background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    opacity: 0;
     &.shown {
       display: block;
+      opacity: 1;
+      animation-name: fadein;
+      animation-duration: 0.4s;
     }
+  }
+
+  @keyframes fadein {
+    from {opacity: 0}
+    to {opacity: 1}
   }
 
   /* Modal Header */
   .modal-header {
     padding: 2px 16px;
-    background-color: #5cb85c;
+    background-color: #558b2f;
     color: white;
     border-radius: $border-radius $border-radius 0 0;
   }
@@ -87,7 +96,7 @@ export default class Modal extends Vue {
   /* Modal Footer */
   .modal-footer {
     padding: 2px 16px;
-    background-color: #5cb85c;
+    background-color: #558b2f;
     color: white;
     border-radius: 0 0 $border-radius $border-radius;
   }
@@ -108,8 +117,8 @@ export default class Modal extends Vue {
 
   /* Add Animation */
   @keyframes animatetop {
-    from {top: -300px; opacity: 0}
-    to {top: 0; opacity: 1}
+    from {top: -300px;}
+    to {top: 0;}
   }
 
   /* The Close Button */

@@ -12,42 +12,110 @@
     {{ output }}
   </div>
   <div class="button-row">
-    <button @click="giveUp()">
+    <button
+      :disabled="gameOver"
+      @click="giveUp()"
+    >
       Aufgeben
     </button>
     <button
       class="submit-button"
-      @click="submit"
+      @click="gameOver ? reset($event) : submit()"
     >
-      Eingabe
+      {{ gameOver ? "Nochmal" : "Eingabe" }}
     </button>
-    <button @click="showHelp">
+    <button @click="helpModalShown = true">
       Hilfe
     </button>
   </div>
   <Modal v-model="modalShown">
     <template #header>
-      <h1>Spiel vorbei</h1>
+      <template v-if="gameOver">
+        <h1>{{ modalTitle }}</h1>
+      </template>
     </template>
     <template #body>
-      <p>Das Spiel ist beendet.</p>
+      <p>Das gesuchte Wort war '{{ targetWord }}'.</p>
+      <p v-if="triesToWin > 0">
+        Du hast es in {{ triesToWin }} Versuchen erraten.
+      </p>
     </template>
     <template #footer>
-      ...
+      <div class="modal-button-row">
+        <button
+          class="text"
+          @click="reset($event)"
+        >
+          Neues Spiel
+        </button>
+      </div>
+    </template>
+  </Modal>
+  <Modal v-model="helpModalShown">
+    <template #header>
+      <h1>Hilfe</h1>
+    </template>
+    <template #body>
+      <p>
+        Du hast {{ numWords }} Versuche, um das Wort zu erraten.
+        Jeder Versuch gibt dir dabei Hinweise:
+      </p>
+      <div class="explainer-box">
+        <LetterBox
+          letter="a"
+          :state="3"
+        />
+        <p>
+          Grün heißt: Der Buchstabe steht an der richtigen Stelle.
+        </p>
+      </div>
+      <div class="explainer-box">
+        <LetterBox
+          letter="a"
+          :state="2"
+        />
+        <p>
+          Gelb heißt: Der Buchstabe ist richtig, steht aber an der falschen Stelle.
+        </p>
+      </div>
+      <div class="explainer-box">
+        <LetterBox
+          letter="a"
+          :state="1"
+        />
+        <p>
+          Grau heißt: Der Buchstabe kommt nicht vor.
+        </p>
+      </div>
+    </template>
+    <template #footer>
+      <div class="modal-button-row">
+        <button
+          class="text"
+          @click="helpModalShown = false"
+        >
+          Alles klar!
+        </button>
+      </div>
     </template>
   </Modal>
 </template>
 
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
+import { Watch } from 'vue-property-decorator';
 import LetterRow from './components/LetterRow.vue';
 import Modal from './components/Modal.vue';
 import Dictionary from './dict/dictionary';
+import german5 from './dict/german5';
+import german5Simple from './dict/german5_simple';
 import GameOverReason from './GameOverReason';
+import LetterBox from './components/LetterBox.vue';
 
 @Options({
   components: {
     LetterRow,
+    LetterBox,
     Modal,
   },
 })
@@ -62,7 +130,11 @@ export default class App extends Vue {
 
   readonly allowedLetters = 'abcdefghijklmnopqrstuvwxyz';
 
-  readonly dictionary = new Dictionary();
+  // Dictionary with all valid words
+  readonly dictionary = new Dictionary(german5);
+
+  // Dictionary with all possible target words (simpler)
+  readonly targetDictionary = new Dictionary(german5Simple);
 
   readonly numWords = 6;
 
@@ -70,23 +142,31 @@ export default class App extends Vue {
 
   triesToWin = -1;
 
-  modalShown = true;
+  modalShown = false;
+
+  helpModalShown = false;
 
   reason: GameOverReason = GameOverReason.CRASH;
 
   mounted(): void {
-    this.targetWord = this.dictionary.getRandomWord();
     this.reset(null);
     document.addEventListener('keyup', this.onKeyUp);
   }
 
+  @Watch('modalShown')
+  onModalShownChange(newVal: boolean): void {
+    if (newVal) this.helpModalShown = false;
+  }
+
   reset($event: Event | null): void {
+    this.targetWord = this.targetDictionary.getRandomWord();
     this.words = new Array(this.numWords).fill('');
     this.activeRow = 0;
     this.output = 'Versuche, das Wort zu erraten!';
     this.gameOver = false;
     this.triesToWin = -1;
     if ($event?.target) ($event.target as HTMLElement).blur();
+    this.modalShown = false;
   }
 
   // returns the currently typed word
@@ -101,8 +181,41 @@ export default class App extends Vue {
     }
   }
 
+  get modalTitle(): string {
+    switch (this.reason) {
+      case GameOverReason.CRASH:
+        return 'Fehler';
+      case GameOverReason.USER_GAVE_UP:
+        return 'Aufgegeben';
+      case GameOverReason.USER_LOST:
+        return 'Spiel vorbei';
+      case GameOverReason.USER_WON:
+        return 'Gut gemacht!';
+      default:
+        return '';
+    }
+  }
+
   giveUp(): void {
+    this.triesToWin = -1;
+    this.output = 'Spiel vorbei!';
     this.reason = GameOverReason.USER_GAVE_UP;
+    this.gameOver = true;
+    this.modalShown = true;
+  }
+
+  win(tries: number): void {
+    this.triesToWin = tries;
+    this.output = `Richtig! (${tries} Versuche)`;
+    this.reason = GameOverReason.USER_WON;
+    this.gameOver = true;
+    this.modalShown = true;
+  }
+
+  lose(): void {
+    this.triesToWin = -1;
+    this.output = 'Spiel vorbei!';
+    this.reason = GameOverReason.USER_LOST;
     this.gameOver = true;
     this.modalShown = true;
   }
@@ -112,29 +225,21 @@ export default class App extends Vue {
     // try to submit word
     if (this.activeWord?.length === 5) {
       const word = this.activeWord;
-      if (this.dictionary.check(word)) {
+      if (this.dictionary.contains(word)) {
         // valid word
         if (this.activeRow < this.numWords) {
           // go to next word
           this.activeRow += 1;
         }
         if (word === this.targetWord) {
-          this.triesToWin = this.activeRow;
-          this.output = `Richtig! (${this.triesToWin} Versuche)`;
-          this.gameOver = true;
+          this.win(this.activeRow);
         } else if (this.activeRow === this.numWords) {
-          this.output = 'Spiel vorbei!';
-          this.triesToWin = -1;
-          this.gameOver = true;
+          this.lose();
         }
       } else {
         this.output = `Unbekanntes Wort: ${this.activeWord}`;
       }
     }
-  }
-
-  showHelp(): void {
-    this.output = 'Hilfe';
   }
 
   private onKeyUp(e: KeyboardEvent): void {
@@ -179,30 +284,65 @@ h1 {
   display: flex;
   justify-content: center;
   & button {
-    margin: 5px;
-    border: 2px solid #000000;
-    background-color: #ffffff;
-    padding: 6px 8px;
-    font-size: 16px;
     width: 92px;
-    border-radius: 10px;
-    transition: all .05s linear;
+  }
+}
 
-    &.submit-button {
-      background-color: #558b2f;
-      color: #ffffff;
-      &:hover {
-        background-color: #8bc34a;
-      }
-    }
+.modal-button-row {
+  display: flex;
+  justify-content: flex-end;
+  & button {
+    color: white;
+  }
+}
+
+button {
+  margin: 5px;
+  border: 2px solid #000000;
+  background-color: #ffffff;
+  padding: 6px 8px;
+  font-size: 16px;
+  border-radius: 10px;
+  transition: all .05s linear;
+  cursor: pointer;
+  &[disabled] {
+    cursor: default;
+    border-color: #cfd8dc;
+  }
+  &:hover:not([disabled]) {
+    background-color: #cfd8dc;
+  }
+  &.submit-button {
+    background-color: #558b2f;
+    color: #ffffff;
     &:hover {
-      background-color: #cfd8dc;
+      background-color: #8bc34a;
+    }
+  }
+  &.text {
+    border: none;
+    background: none;
+    &:hover {
+      background-color: rgba(139, 195, 74, 0.5);
     }
   }
 }
 
 .info-text {
   margin: 4px;
+}
+
+.explainer-box {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  & div {
+    flex: 0 0 auto;
+  }
+  & p {
+    margin: 0;
+    padding: 10px;
+  }
 }
 
 @media only screen and (max-width: 600px) {

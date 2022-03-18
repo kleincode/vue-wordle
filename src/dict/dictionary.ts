@@ -1,13 +1,12 @@
-import german5 from './german5';
-
 class Dictionary {
-    readonly dictStr = german5;
+    readonly dictStr: string;
 
     readonly wordLength = 5;
 
     readonly numWords: number;
 
-    constructor() {
+    constructor(dictStr: string) {
+      this.dictStr = dictStr;
       if (this.dictStr.length % this.wordLength !== 0) {
         throw new Error('Dictionary length is not multiple of 5');
       }
@@ -19,7 +18,7 @@ class Dictionary {
       return this.dictStr.substring(5 * i, 5 * (i + 1));
     }
 
-    check(searchString: string): boolean {
+    contains(searchString: string): boolean {
       const target = searchString.toLocaleLowerCase();
       // binary search
       let l = 0;
